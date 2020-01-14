@@ -1,0 +1,29 @@
+<!--
+ * *********************************************************************************************************************
+ * Configuration of the logback logging framework for tests.
+ * For help with configuration syntax see the logback manual - http://logback.qos.ch/manual/configuration.html
+ * Formatting characters used in patterns are documented in http://logback.qos.ch/manual/layouts.html
+ * *********************************************************************************************************************
+-->
+<configuration scan="false" scanPeriod="10 seconds" debug="false">
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{ISO8601} [%thread %X] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Parent logger for all the service's classes -->
+    <!-- To permanently override config'd log-level on startup (e.g. use debug in dev) set Java system property or env
+         var 'SERVICE_LOG_LEVEL'. (To dynamically reconfigure the log-level post-startup, use JMX). -->
+    <!-- Additivity controls whether logs written by these classes are also written to root logger's default appenders.
+         This is enabled as it provides a fallback (non-persistent) source of app logs should there be a problem with
+         logging to other appenders, plus (in the dev env at least) it's convenient to see all logs in one location. -->
+    <logger name="com.neiljbrown.example" level="${SERVICE_LOG_LEVEL:-DEBUG}" additivity="true" />
+
+    <!-- 'root' logger - Defines default log-level and appender used for all classes unless overridden by child logger.-->
+    <!-- By default, log all messages, for all classes, at INFO and above to STDOUT (application's console). -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+</configuration>
