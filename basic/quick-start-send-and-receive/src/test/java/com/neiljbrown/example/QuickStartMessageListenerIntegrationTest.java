@@ -82,7 +82,7 @@ public class QuickStartMessageListenerIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    this.messageListener = new QuickStartMessageListener(message -> {this.handledMessages.add(message);});
+    this.messageListener = new QuickStartMessageListener(message -> this.handledMessages.add(message));
     this.kafkaTemplate = this.createKafkaTemplate(this.producerConfigProps());
   }
 
@@ -166,7 +166,7 @@ public class QuickStartMessageListenerIntegrationTest {
    * @return the created {@link KafkaTemplate}.
    */
   private KafkaTemplate<Integer, String> createKafkaTemplate(Map<String,Object> producerConfigProps) {
-    ProducerFactory<Integer, String> pf = new DefaultKafkaProducerFactory<Integer, String>(producerConfigProps);
+    ProducerFactory<Integer, String> pf = new DefaultKafkaProducerFactory<>(producerConfigProps);
     return new KafkaTemplate<>(pf);
   }
 

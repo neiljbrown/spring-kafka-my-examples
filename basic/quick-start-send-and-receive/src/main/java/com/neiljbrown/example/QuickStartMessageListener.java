@@ -83,12 +83,4 @@ public class QuickStartMessageListener implements MessageListener<Integer, Strin
     Objects.requireNonNull(latch, "latch must not be null.");
     this.latch = latch;
   }
-
-  /**
-   * @return this instance's {@link CountDownLatch} for processed messages.
-   * @see #setProcessedMessageLatch(CountDownLatch) 
-   */
-  public CountDownLatch getProcessedMessageLatch() {
-    return this.latch;
-  }
 }
