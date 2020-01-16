@@ -73,8 +73,10 @@ public class QuickStartMessageListenerIntegrationTest {
 
   private static final String KAFKA_BROKER_DEFAULT_HOST = "localhost";
   private static final String KAFKA_BROKER_DEFAULT_PORT = "9092";
-  private static final String KAFKA_TOPIC_1 = "topic1";
-  private static final String KAFKA_TOPIC_2 = "topic2";
+  private static final String KAFKA_TOPIC_USER_EVENTS = "user-events";
+  private static final String KAFKA_TOPIC_CUSTOMER_EVENTS = "customer-events";
+  private static final String MSG_HDR_MY_EVENT_ID = "my-event-id";
+  private static final String MSG_HDR_MY_EVENT_TYPE = "my-event-type";
 
   private QuickStartMessageListener messageListener;
   private List<ConsumerRecord<Integer, String>> handledMessages = new ArrayList<>();
@@ -113,44 +115,47 @@ public class QuickStartMessageListenerIntegrationTest {
     // *** Example Usage of KafkaTemplate to send messages
 
     // KafkaTemplate can be configured to send messages to a default topic
-    this.kafkaTemplate.setDefaultTopic(KAFKA_TOPIC_1);
+    this.kafkaTemplate.setDefaultTopic(KAFKA_TOPIC_USER_EVENTS);
 
     // Send a message to the default topic, without a partition, comprising the specified key and value.
-    this.kafkaTemplate.sendDefault(1,"foo");
+    this.kafkaTemplate.sendDefault(1,"{\"userId\": 1, \"firstName\": \"joe\"}");
 
     // Send a message to a specific topic AND partition, comprising the specified key and value.
-    this.kafkaTemplate.send(KAFKA_TOPIC_1, 0, 2, "bar");
+    this.kafkaTemplate.send(KAFKA_TOPIC_USER_EVENTS, 0, 2, "{\"userId\": 2, \"firstName\": \"jane\"}");
 
     // Send a message with domain-specific headers using Kafka client API's ProducerRecord class
-    ProducerRecord<Integer, String> producerRecord = new ProducerRecord<>(KAFKA_TOPIC_1, null, 3, "baz");
-    producerRecord.headers().add("my-event-id", "1".getBytes());
-    producerRecord.headers().add("my-event-type", "user".getBytes());
+    ProducerRecord<Integer, String> producerRecord = new ProducerRecord<>(KAFKA_TOPIC_USER_EVENTS, null, 3,
+      "{\"userId\": 3, \"firstName\": \"jack\"}");
+    producerRecord.headers().add(MSG_HDR_MY_EVENT_ID, "123".getBytes());
+    producerRecord.headers().add(MSG_HDR_MY_EVENT_TYPE, "UserCreated".getBytes());
     kafkaTemplate.send(producerRecord);
 
     // Send a message with domain-specific headers using Spring Message interface. The Kafka record (message) value is
     // sourced from the Message's payload. Other values supported when sending a Kafka message, as defined in the
     // Kafka client API's ProducerRecord class, must be supplied as Message headers using provided Spring constants.
-    kafkaTemplate.send(new GenericMessage<>("fudge", Map.of(
-        KafkaHeaders.TOPIC, KAFKA_TOPIC_1, // KafkaTemplate's default topic used if not provided. One or other required.
-        KafkaHeaders.PARTITION_ID, 0, // Optional
-        KafkaHeaders.MESSAGE_KEY, 4, // Optional
-        // Note - Additional domain-specific headers are only included in the Kafka message if value of type byte[]
-        "my-event-id", "2".getBytes(StandardCharsets.UTF_8),
-        "my-event-type", "user".getBytes(StandardCharsets.UTF_8)
-      ))
-    );
+    final String userCreatedEventJson = "{\"userId\": 4, \"firstName\": \"jim\"}";
+    final String myEventId = "124";
+    final GenericMessage<String> eventMessage = new GenericMessage<>(userCreatedEventJson, Map.of(
+      KafkaHeaders.TOPIC, KAFKA_TOPIC_USER_EVENTS, // KafkaTemplate's default topic used if not provided. One or other required.
+      KafkaHeaders.PARTITION_ID, 0, // Optional
+      KafkaHeaders.MESSAGE_KEY, 4, // Optional
+      // Note - Additional domain-specific headers are only included in the Kafka message if value of type byte[]
+      MSG_HDR_MY_EVENT_ID, myEventId.getBytes(StandardCharsets.UTF_8),
+      MSG_HDR_MY_EVENT_TYPE, "UserCreated".getBytes(StandardCharsets.UTF_8)
+    ));
+    this.kafkaTemplate.send(eventMessage);
 
     assertThat(countDownLatch.await(5, TimeUnit.SECONDS))
       .withFailMessage("Timed-out waiting for MessageListener under test to receive all sent messages.")
       .isTrue();
 
     // Assert details of the last received message
-    assertThat(this.handledMessages.get(3).value()).isEqualTo("fudge");
-    assertThat(this.handledMessages.get(3).key()).isEqualTo(4);
+    assertThat(this.handledMessages.get(3).value()).isEqualTo(userCreatedEventJson);
+    assertThat(this.handledMessages.get(3).key()).isEqualTo(eventMessage.getHeaders().get(KafkaHeaders.MESSAGE_KEY));
     // Kafka ConsumerRecord header values are binary (raw byte[]) and have to be converted back to expected type
-    Header myEventIdHeader = this.handledMessages.get(3).headers().lastHeader("my-event-id");
+    Header myEventIdHeader = this.handledMessages.get(3).headers().lastHeader(MSG_HDR_MY_EVENT_ID);
     assertThat(myEventIdHeader).isNotNull();
-    assertThat(new String(myEventIdHeader.value(),StandardCharsets.UTF_8)).isEqualTo("2");
+    assertThat(new String(myEventIdHeader.value(),StandardCharsets.UTF_8)).isEqualTo(myEventId);
 
     kafkaMessageListenerContainer.stop();
   }
@@ -217,7 +222,7 @@ public class QuickStartMessageListenerIntegrationTest {
    */
   private ContainerProperties createMessageListenerContainerProperties() {
     // Include the name of topics to which the MessageListenerContainer should subscribe
-    return new ContainerProperties(KAFKA_TOPIC_1, KAFKA_TOPIC_2);
+    return new ContainerProperties(KAFKA_TOPIC_USER_EVENTS, KAFKA_TOPIC_CUSTOMER_EVENTS);
   }
 
   /**
