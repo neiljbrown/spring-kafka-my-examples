@@ -1,0 +1,145 @@
+= Spring for Kafka, Basic Sample - Send and Receive Messages
+:sectlinks:
+:sectnums:
+:sectnumlevels: 4
+:toc:
+:toclevels: 4
+
+== Purpose
+This project provides a basic example of using the Spring for Kafka library (module) that covers sending and
+receiving messages to/from Kafka topics. It provides examples of using the following Spring for Kafka
+features -
+
+*1) KafkaTemplate* - Using the https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/core/KafkaTemplate.html[KafkaTemplate]
+class which simplifies sending messages to a Kafka topic, by creating and wrapping an instance of the Kafka client
+API's https://kafka.apache.org/24/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html[KafkaProducer], and
+providing a set of overloaded convenience methods for sending.
+
+*2) POJO Message Listeners* - How to take advantage of Spring for Kafka's https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/listener/KafkaMessageListenerContainer.html[KafkaMessageListenerContainer]
+support for simplifying the code that needs to be written to process messages received on Kafka topics. The
+MessageListenerContainer (MLC) performs the 'heavy lifting' of maintaining a reliable connection to the Kafka broker
+and consuming messages from one or more specified topics (using the Kafka  client API's
+https://kafka.apache.org/24/javadoc/index.html?org/apache/kafka/clients/consumer/KafkaConsumer.html[KafkaConsumer]).
+Application code then only needs to provide a message handler method to which the MLC can dispatch messages, by registering a
+(POJO) implementation of Spring for Kafka's
+https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/listener/MessageListener.html[MessageListener].
+
+== Project Overview
+The project is written in Java. The source code, and its automated tests can be found in the standard folders
+- src/main/java and src/test/java respectively.
+
+The main 'production' classes of interest are -
+
+* `QuickStartMessageListener` - An example of a POJO implementation of the aforementioned Spring for Kafka
+MessageListener interface that provides a 'handler' method for processing individual Kafka messages dispatched to it
+by the Spring for Kafka KafkaMessageListenerContainer with which it has been registered.
+
+Automated tests are written using JUnit (5). They include  -
+
+* `QuickStartMessageListenerIntegrationTest` - A JUnit test class which serves multiple purposes. Notionally it is an
+integration test for the aforementioned `QuickStartMessageListener` class, which exercises the MessageListener in
+conjunction with both the Spring framework and the real implementation of the message broker (Kafka). However, for the
+purposes of this sample, the test case's automated tests (@Test methods) for the MessageListener's +onMessage(...)
+method are also used to provide examples of how to use Spring for Kafka's `KafkaTemplate` class to simplify sending
+of messages to Kafka topics in a reliable manner.
+
+== Generating IDE Projects and Code Docs (Javadoc)
+If you'd like to view the source and/or run the project's tests from your IDE, the project's Gradle build script
+supports generating IDE project files for both Eclipse and IntelliJ IDEA.
+
+To generate an Eclipse project use the following command:
+
+`./gradlew cleanEclipse eclipse`
+
+To generate an IntelliJ IDEA project use the following command:
+
+`./gradlew cleanIdea idea`
+
+To generate the Javadoc for the production code, use the following command:
+
+`./gradlew clean javadoc`
+
+The generated Javadoc can be found in the standard location for a Gradle project - build/docs/javadoc/index.html.
+
+To generate the Javadoc for the test code, use the following command:
+
+`./gradlew clean javadocTests`
+
+The generated Javadoc can be found in the standard location for a Gradle project - build/docs/javadocTests/index.html.
+
+For more details of Gradle build support see build.gradle in the project's root folder.
+
+== Tested Versions of Dependencies & Broker
+This example is built from and has been tested to run with the following third-party dependencies (Java libraries)  and
+run-times. (These are minimum versions. More recent versions may well work if they provide backwards compatibility,
+but they haven't been tested).
+
+ * Java 11
+
+ * Spring for Kafka 2.4.0.RELEASE - This in turn defines transitive dependencies on core Spring (5.2.2.RELEASE) and
+the Kafka Client API for Java (2.4.0).
+
+ * Apache Kafka 2.1.x
+
+== Building & Running the Automated Tests
+This section contains outline instructions on how to  use the automated integration tests to perform an end-to-end test
+of the Spring for Kafka MessageListener and KafkaTemplate in conjunction with a locally running instance of a
+Kafka message broker.
+
+=== Pre-requisites
+*Java*  - You will need to install a Java JDK (see min supported version above).
+
+A Gradle build script is provided to support building and running the app and its automated tests, as well as
+packaging the app for deploying and running standalone. The minimum required version of Gradle will be
+automatically installed when you execute the build using the supplied Gradle wrapper script (./gradlew), so this is
+_not_ a pre-requisite.
+
+*Kafka* - The automated integration tests currently rely on connecting to a local instance of Kafka, listening on its
+default port. You will  therefore need to install and start Kafka on your local machine before you can run the tests,
+
+=== Steps
+
+*1)* Launch an instance of the Kafka broker in a background process listening on localhost default port (9092).
+
+If you installed Kafka on a Mac using the Homebrew package manager the following commands will work  -
+```bash
+$ zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties &
+$ kafka-server-start /usr/local/etc/kafka/server.properties &
+```
+
+*2)* Compile and run all the automated tests from the command line, by entering the following command in the project's
+root folder:
+
+`./gradlew test`
+
+If the test runs successfully you will see messages similar to the following logged to the console (stdout) -
+```
+com.neiljbrown.example.QuickStartMessageListenerIntegrationTest > tesOnMessage() STANDARD_OUT
+    ...
+    2020-01-18 19:00:59,045 [Test worker ] INFO  o.a.k.clients.consumer.KafkaConsumer - [Consumer clientId=consumer-springKafkaQuickStartGroup-1, groupId=springKafkaQuickStartGroup] Subscribed to topic(s): user-events, customer-events
+    ...
+    ...
+    2020-01-18 19:01:00,569 [Test worker ] INFO  o.a.k.c.producer.ProducerConfig - ProducerConfig values:
+    ...
+    ...
+    2020-01-18 19:01:00,666 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 16, CreateTime = 1579374060613, serialized key size = 4, serialized value size = 33, headers = RecordHeaders(headers = [], isReadOnly = false), key = 1, value = {"userId": 1, "firstName": "joe"})].
+    2020-01-18 19:01:00,667 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 17, CreateTime = 1579374060618, serialized key size = 4, serialized value size = 34, headers = RecordHeaders(headers = [], isReadOnly = false), key = 2, value = {"userId": 2, "firstName": "jane"})].
+    2020-01-18 19:01:00,667 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 18, CreateTime = 1579374060619, serialized key size = 4, serialized value size = 34, headers = RecordHeaders(headers = [RecordHeader(key = my-event-id, value = [49, 50, 51]), RecordHeader(key = my-event-type, value = [85, 115, 101, 114, 67, 114, 101, 97, 116, 101, 100])], isReadOnly = false), key = 3, value = {"userId": 3, "firstName": "jack"})].
+    2020-01-18 19:01:00,669 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 19, CreateTime = 1579374060623, serialized key size = 4, serialized value size = 33, headers = RecordHeaders(headers = [RecordHeader(key = my-event-type, value = [85, 115, 101, 114, 67, 114, 101, 97, 116, 101, 100]), RecordHeader(key = my-event-id, value = [49, 50, 52])], isReadOnly = false), key = 4, value = {"userId": 4, "firstName": "jim"})].
+    ...
+    ...
+    2020-01-18 19:01:00,740 [-C-1 ] INFO  o.s.k.l.KafkaMessageListenerContainer$ListenerConsumer - springKafkaQuickStartGroup: Consumer stopped
+
+com.neiljbrown.example.QuickStartMessageListenerIntegrationTest > tesOnMessage() PASSED
+
+```
+
+*3)* Shutdown Kafka:
+```bash
+$ kafka-server-stop
+$ zookeeper-server-stop
+```
+
+End
+
+---
