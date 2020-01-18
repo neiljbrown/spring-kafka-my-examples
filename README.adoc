@@ -1,0 +1,26 @@
+= Spring for Kafka - My Examples 
+:sectlinks:
+:sectnums:
+:sectnumlevels: 4
+:toclevels: 4
+
+This repo contains a collection of my examples of using the Spring for Kafka library/module to simplify building   
+message-driven microservices that use the Apache Kafka message broker.
+
+Each example is implemented as a standalone app or apps(s). The source code for each is contained within a separate
+sub-folder within this repo.
+
+A summary of the examples produced to date is provided below. 
+
+== Basic examples
+This folder contains examples of using essential, core features of Spring for Kakfa to implement basic Kafka
+messaging apps and their typical operations.
+
+*basic/quick-start-send-and-receive* - This project covers sending and receiving messages to/from Kafka topics. It provides 
+examples of using Spring for Kafka's KafkaTemplate to simplfy sending messages, and how to take advantage of Spring for Kafka's 
+support for simplifying consuming messages for Kafka topics by registering simple POJO based message handlers
+(MessageListener). 
+
+End
+
+---
