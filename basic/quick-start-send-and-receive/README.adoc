@@ -24,6 +24,18 @@ Application code then only needs to provide a message handler method to which th
 (POJO) implementation of Spring for Kafka's
 https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/listener/MessageListener.html[MessageListener].
 
+== Project Versions
+Multiple versions of this project exist. Their git tag and the purpose of each is as follows  -
+
+.Project Versions
+[cols="0,1"]
+|===
+|Tag|Purpose
+|0.0.1
+|A fully functional example which illustrates how to create the necessary Spring for Kafka objects for sending & receiving messages using plan Java alone, without relying on Spring bean config (or Spring Boot.
+|===
+
+
 == Project Overview
 The project is written in Java. The source code, and its automated tests can be found in the standard folders
 - src/main/java and src/test/java respectively.
