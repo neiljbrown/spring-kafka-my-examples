@@ -32,7 +32,10 @@ Multiple versions of this project exist. Their git tag and the purpose of each i
 |===
 |Tag|Purpose
 |0.0.1
-|A fully functional example which illustrates how to create the necessary Spring for Kafka objects for sending & receiving messages using plan Java alone, without relying on Spring bean config (or Spring Boot.
+|A fully functional example which illustrates how to manually create all the necessary Spring for Kafka objects for
+sending & receiving messages, directly using its Java APIs. (Provides greater insight into Spring for Kafka concepts
+and APIs, but in practice you're better off using the framework's support for creating a default set of these objects
+as managed beans,  as shown in v0.0.2 of  this project).
 |===
 
 
