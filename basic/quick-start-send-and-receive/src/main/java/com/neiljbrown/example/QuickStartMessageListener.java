@@ -22,21 +22,28 @@ import java.util.function.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.kafka.listener.MessageListener;
+import org.springframework.kafka.annotation.KafkaListener;
 
 /**
- * A POJO implementation of a Spring for Kafka {@link MessageListener} that can be used to process individual Kafka
- * messages dispatched to it by a Spring for Kafka
- * {@link org.springframework.kafka.listener.KafkaMessageListenerContainer}, which does the heavy lifting of
- * maintaining a reliable connection to the broker, consuming the messages from Kafka topic(s) and acknowledging them.
+ * An example of a POJO message listener that contains message handler methods capable of processing notional User
+ * domain events that are dispatched to it.
  * <p>
- * This is a quick-start sample implementation of a MessageListener so doesn't do much. For details of its behaviour
- * see {@link #onMessage(ConsumerRecord)}.
+ * This message listener class supports working in conjunction with a Spring for Kafka
+ * {@link org.springframework.kafka.listener.KafkaMessageListenerContainer} (MLC). The MLC does the heavy lifting of
+ * maintaining a reliable connection to the message broker, consuming the messages from Kafka topic(s), dispatching
+ * them to this listener, and acknowledging them when they're successfully processed.
  * <p>
- * Note that the {@link MessageListener} interface is an {@link FunctionalInterface} so simple listeners could be
- * implemented anonymously using a lambda function.
+ * After having applied the {@link org.springframework.kafka.annotation.EnableKafka} annotation in the application's
+ * Spring bean config, this class no longer needs to implement the Spring for Kafka
+ * {@link org.springframework.kafka.listener.MessageListener} interface nor register itself with the MLC. Instead,
+ * this listener's available message handler methods can be made discoverable by declaring them using the
+ * {@link KafkaListener} annotation. This annotation is also used to specify the topic(s) from which handler method
+ * listens and consumes messages.
  */
-public class QuickStartMessageListener implements MessageListener<Integer, String> {
+public class QuickStartMessageListener {
+
+  /** The name of the Kafka topic from which User domain events are consumed. */
+  static final String KAFKA_TOPIC_USER_EVENTS = "user-events";
 
   private static final Logger logger = LoggerFactory.getLogger(QuickStartMessageListener.class);
 
@@ -63,7 +70,7 @@ public class QuickStartMessageListener implements MessageListener<Integer, Strin
    * @param message the Kafka message to be processed in the form of a {@link ConsumerRecord}.
    * @see #setProcessedMessageLatch(CountDownLatch)
    */
-  @Override
+  @KafkaListener(topics = KAFKA_TOPIC_USER_EVENTS)
   public void onMessage(ConsumerRecord<Integer, String> message) {
     logger.debug("Received message [" + message + "].");
     this.latch.countDown();
@@ -73,14 +80,33 @@ public class QuickStartMessageListener implements MessageListener<Integer, Strin
   }
 
   /**
-   * Sets the instance of the {@link CountDownLatch} that this instance should count down (decrement) each time it
-   * processes a new message via {@link #onMessage(ConsumerRecord)}. Supports collaborating (test) code blocking 
-   * until this listener has received and processed an expected no. of messages in the latch.
+   * Sets the instance of the {@link CountDownLatch} that this message listener should use for its
+   * {@link #latch processedMessageLatch} property.
+   * <p>
+   * This property is only used to support testing of this class. The message listener decrements the latch each time it
+   * processes a new message using one of its message handler methods, e.g. {@link #onMessage(ConsumerRecord)}. This
+   * supports collaborating (test) code blocking until this listener has received and processed an expected no. of
+   * messages.
    * 
    * @param latch the {@link CountDownLatch}.
    */
   public void setProcessedMessageLatch(CountDownLatch latch) {
     Objects.requireNonNull(latch, "latch must not be null.");
     this.latch = latch;
+  }
+
+  /**
+   * Sets the instance of a {@link Consumer} functional interface that this message listener should  use for its
+   * {@link #messageProcessor} property.
+   * <p>
+   * This property is only provided to support testing of this class. (The {@link #onMessage(ConsumerRecord)} method
+   * would typically fully process the message itself). A message handler methods that is based on implementing
+   * {@link org.springframework.kafka.listener.MessageListener#onMessage(Object)} can't return values. Setting this
+   * property supports test code verifying each received message.
+   *
+   * @param messageProcessor the {@link Consumer}.
+   */
+  public void setMessageProcessor(Consumer<ConsumerRecord<Integer, String>> messageProcessor) {
+    this.messageProcessor = messageProcessor;
   }
 }

@@ -35,11 +35,11 @@ import org.springframework.kafka.listener.MessageListenerContainer;
  * A Spring {@code @Configuration} class that declares the Spring-managed beans that this app uses to support sending
  * and receiving messages via its Kafka message broker, with the help of the Spring for Kafka project. See the @Bean
  * annotated methods for details.
- * <p>
+ * <br><br>
  * <h2>Use of EnableKafka Class Annotation</h2>
- * The class uses the Spring for Kafka project's {@link @EnableKafka EnableKafka annotation} as a convenient way to
- * automate enabling support for POJO-based message listeners for processing messages received on specified Kafka
- * topic(s). The annotation support includes creating and registering a default set of supporting infrastructure beans
+ * The class uses the Spring for Kafka project's {@link EnableKafka} annotation as a convenient way to automate
+ * enabling support for POJO-based message listeners for processing messages received on specified Kafka topic(s).
+ * The annotation support includes creating and registering a default set of supporting infrastructure beans
  * e.g. a KafkaMessageListenerContainer, and detecting message handler methods declared using the @KafkaListener
  * annotation on any registered Spring beans (removing the need for classes to implement Spring for Kafka's
  * {@link org.springframework.kafka.listener.MessageListener} interface. For a Spring-based Kafka messaging app the
