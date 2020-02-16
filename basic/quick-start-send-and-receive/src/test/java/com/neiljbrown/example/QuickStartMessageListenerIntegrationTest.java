@@ -22,40 +22,38 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Header;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.IntegerSerializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.*;
-import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.support.GenericMessage;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /*
- * Driver program for this sample app, which provides an example of how to use the following features of the Spring for
- * Kafka library/module.
+ * Driver program for this sample app implemented in the form of Spring container integration test for the {@link
+ * QuickStartMessageListener}. Provides an example of how to use the following features of the Spring for Kafka
+ * library/module.
  * <p>
  * <br>
  * <strong>1) KafkaTemplate</strong> - Using the {@link KafkaTemplate} class to simplify sending messages to a Kafka
  * topic, by creating and wrapping an instance of the Kafka client API's
- * {@link org.apache.kafka.clients.producer.KafkaProducer}, and providing a set
- * of overloaded convenience methods for sending.
+ * {@link org.apache.kafka.clients.producer.KafkaProducer}, and providing a set of overloaded convenience methods for
+ * sending.
  * <p>
  * <br>
  * <strong>2) POJO Message Listeners</strong> - How to take advantage of Spring for Kafka's
  * {@link KafkaMessageListenerContainer} support for simplifying the code that needs to be written to process
  * messages received on Kafka topics. The MessageListenerContainer (MLC) performs the 'heavy lifting' of maintaining a
- * reliable connection to the Kafka broker and consuming messages from one or more specified topics. Application code
- * only needs to provide a message handler method to which the MLC can dispatch messages, by registering a (POJO)
- * implementation of Spring for Kafka's {@link org.springframework.kafka.listener.MessageListener}.
+ * reliable connection to the Kafka broker, consuming messages from one or more specified topics, and acknowledging
+ * them when successfully process by the app. Application code only needs to provide a message handler method
+ * (containing the business logic) to which the MLC can dispatch messages, by registering a (POJO) implementation of
+ * Spring for Kafka's {@link org.springframework.kafka.listener.MessageListener}, either directly or by declaring
+ * handler methods using the {@link KafkaListener} annotation.
  * <p>
  * <br>
  * <h2>Implementation Overview &amp; Runtime Dependencies</h2>
@@ -63,51 +61,56 @@ import org.springframework.messaging.support.GenericMessage;
  * sample implementation of Spring or Kafka's {@link org.springframework.kafka.listener.MessageListener}.
  * <p>
  * The test method(s) currently relies on connecting to a previously launched, locally running instance of the Kafka
- * broker, listening on the default port ({@link #KAFKA_BROKER_DEFAULT_PORT}). In practice, this test case would be
- * considered an integration test of the message listener with both the Spring framework and the real implementation
- * of the message broker.
+ * broker, listening on the default port (see {@link KafkaSpringBeanConfig#KAFKA_BROKER_DEFAULT_PORT}). In practice,
+ * this test case would be considered an integration test of the message listener with both the Spring framework and
+ * the real implementation of the message broker.
  * <p>
  * For more details see logic in single test method {@link #tesOnMessage()}.
  */
+// Instruct JUnit 5 to extend the test with Spring support as provided by the Spring TestContext framework; And
+// instruct the TestContext framework to load a Spring AppContext from the specified bean config class
+@SpringJUnitConfig(KafkaSpringBeanConfig.class)
 public class QuickStartMessageListenerIntegrationTest {
 
-  private static final String KAFKA_BROKER_DEFAULT_HOST = "localhost";
-  private static final String KAFKA_BROKER_DEFAULT_PORT = "9092";
-  private static final String KAFKA_TOPIC_USER_EVENTS = "user-events";
-  private static final String KAFKA_TOPIC_CUSTOMER_EVENTS = "customer-events";
   private static final String MSG_HDR_MY_EVENT_ID = "my-event-id";
   private static final String MSG_HDR_MY_EVENT_TYPE = "my-event-type";
 
   private QuickStartMessageListener messageListener;
-  private List<ConsumerRecord<Integer, String>> handledMessages = new ArrayList<>();
   private KafkaTemplate<Integer, String> kafkaTemplate;
+  private List<ConsumerRecord<Integer, String>> handledMessages = new ArrayList<>();
+
+  /**
+   * Creates an instance of this test from its supplied dependencies.
+   *
+   * @param messageListener the instance of the {@link QuickStartMessageListener} under test. This should be a Spring
+   * managed bean whose @KafkaListener annotated message handler methods have detected by and registered with Spring
+   * for Kafka's MessageListenerContainer.
+   * @param kafkaTemplate a {@link KafkaTemplate} capable of sending messages with an Integer key and a String value.
+   */
+  @Autowired
+  public QuickStartMessageListenerIntegrationTest(QuickStartMessageListener messageListener,
+    KafkaTemplate<Integer, String> kafkaTemplate) {
+    this.kafkaTemplate = kafkaTemplate;
+    this.messageListener = messageListener;
+  }
 
   @BeforeEach
   void setUp() {
-    this.messageListener = new QuickStartMessageListener(message -> this.handledMessages.add(message));
-    this.kafkaTemplate = this.createKafkaTemplate(this.producerConfigProps());
+    // Capture the messages processed by the class under test to support asserting receipt & processing
+    this.messageListener.setMessageProcessor(message -> this.handledMessages.add(message));
   }
 
   /**
    * Integration test for {@link QuickStartMessageListener#onMessage(ConsumerRecord)}, which primarily serves to
    * illustrate how Spring for Kafka can be used on top of the Kafka client APIs to simplify sending and receiving
    * messages via Kafka, by both using a POJO based message listener, facilitated by Spring for Kafka's
-   * {@link KafkaMessageListenerContainer}, to simplify consuming messages received on Kafka topics;  and Spring for
+   * {@link KafkaMessageListenerContainer}, to simplify consuming messages received on Kafka topics; and Spring for
    * Kafka's {@link KafkaTemplate} to simplify sending messages to Kafka topics.
    *
    * @throws Exception if an unexpected error occurs on execution of this test.
    */
   @Test
   public void tesOnMessage() throws Exception {
-    // Create an instance of the Spring KafkaMessageListener container that's configured to connect to Kafka,
-    // consume from specific topics and dispatch received messages to our MessageListener
-    ContainerProperties containerProperties = this.createMessageListenerContainerProperties();
-    containerProperties.setMessageListener(this.messageListener);
-    KafkaMessageListenerContainer<Integer, String> kafkaMessageListenerContainer =
-      this.createKafkaMessageListenerContainer(containerProperties, this.consumerConfigProperties());
-    kafkaMessageListenerContainer.start();
-    Thread.sleep(1500); // Give it time to start
-
     // Configure our MessageListener with a latch to support this test blocking on it receiving all expected messages
     CountDownLatch countDownLatch = new CountDownLatch(4);
     this.messageListener.setProcessedMessageLatch(countDownLatch);
@@ -115,20 +118,20 @@ public class QuickStartMessageListenerIntegrationTest {
     // *** Example Usage of KafkaTemplate to send messages
 
     // KafkaTemplate can be configured to send messages to a default topic
-    this.kafkaTemplate.setDefaultTopic(KAFKA_TOPIC_USER_EVENTS);
+    this.kafkaTemplate.setDefaultTopic(QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS);
 
     // Send a message to the default topic, without a partition, comprising the specified key and value.
     this.kafkaTemplate.sendDefault(1,"{\"userId\": 1, \"firstName\": \"joe\"}");
 
     // Send a message to a specific topic AND partition, comprising the specified key and value.
-    this.kafkaTemplate.send(KAFKA_TOPIC_USER_EVENTS, 0, 2, "{\"userId\": 2, \"firstName\": \"jane\"}");
+    this.kafkaTemplate.send(QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS, 0, 2, "{\"userId\": 2, \"firstName\": \"jane\"}");
 
     // Send a message with domain-specific headers using Kafka client API's ProducerRecord class
-    ProducerRecord<Integer, String> producerRecord = new ProducerRecord<>(KAFKA_TOPIC_USER_EVENTS, null, 3,
+    ProducerRecord<Integer, String> producerRecord = new ProducerRecord<>(QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS, null, 3,
       "{\"userId\": 3, \"firstName\": \"jack\"}");
     producerRecord.headers().add(MSG_HDR_MY_EVENT_ID, "123".getBytes());
     producerRecord.headers().add(MSG_HDR_MY_EVENT_TYPE, "UserCreated".getBytes());
-    kafkaTemplate.send(producerRecord);
+    this.kafkaTemplate.send(producerRecord);
 
     // Send a message with domain-specific headers using Spring Message interface. The Kafka record (message) value is
     // sourced from the Message's payload. Other values supported when sending a Kafka message, as defined in the
@@ -136,7 +139,7 @@ public class QuickStartMessageListenerIntegrationTest {
     final String userCreatedEventJson = "{\"userId\": 4, \"firstName\": \"jim\"}";
     final String myEventId = "124";
     final GenericMessage<String> eventMessage = new GenericMessage<>(userCreatedEventJson, Map.of(
-      KafkaHeaders.TOPIC, KAFKA_TOPIC_USER_EVENTS, // KafkaTemplate's default topic used if not provided. One or other required.
+      KafkaHeaders.TOPIC, QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS, // KafkaTemplate's default topic used if not provided. One or other required.
       KafkaHeaders.PARTITION_ID, 0, // Optional
       KafkaHeaders.MESSAGE_KEY, 4, // Optional
       // Note - Additional domain-specific headers are only included in the Kafka message if value of type byte[]
@@ -156,93 +159,5 @@ public class QuickStartMessageListenerIntegrationTest {
     Header myEventIdHeader = this.handledMessages.get(3).headers().lastHeader(MSG_HDR_MY_EVENT_ID);
     assertThat(myEventIdHeader).isNotNull();
     assertThat(new String(myEventIdHeader.value(),StandardCharsets.UTF_8)).isEqualTo(myEventId);
-
-    kafkaMessageListenerContainer.stop();
-  }
-
-  /**
-   * Creates the instance of Spring for Kafka {@link KafkaTemplate} that this app uses to simplify publishing/sending
-   * messages to a Kafka topic.
-   *
-   * @param producerConfigProps  a set of properties should be used to configure the underlying Kafka client API's
-   * {@link org.apache.kafka.clients.producer.KafkaProducer} that the created KafkaTemplate uses, in the form of a Map
-   * of supported {@link org.apache.kafka.clients.producer.ProducerConfig} key and value pairs.
-   *
-   * @return the created {@link KafkaTemplate}.
-   */
-  private KafkaTemplate<Integer, String> createKafkaTemplate(Map<String,Object> producerConfigProps) {
-    ProducerFactory<Integer, String> pf = new DefaultKafkaProducerFactory<>(producerConfigProps);
-    return new KafkaTemplate<>(pf);
-  }
-
-  /**
-   * Creates and returns the instance of Spring for Kafka {@link KafkaMessageListenerContainer} that this app
-   * uses to integrate with Kafka and dispatch messages to registered POJO
-   * {@link org.springframework.kafka.listener.MessageListener}.
-   *
-   * @param containerProps the {@link ContainerProperties} to use to configured the listener container.
-   * @return the created {@link KafkaMessageListenerContainer}.
-   *
-   * @param consumerConfigProps a set of properties that the ConsumerFactory should use to configure the Kafka
-   * Consumer instances that it creates, in the form of a Map of supported {@link ConsumerConfig} key and value pairs.
-   */
-  private KafkaMessageListenerContainer<Integer, String> createKafkaMessageListenerContainer(
-    ContainerProperties containerProps, Map<String,Object> consumerConfigProps) {
-    // Create a Spring for Kafka ConsumerFactory for the listener container to use to create its Kafka Consumer(s)
-    DefaultKafkaConsumerFactory<Integer, String> consumerFactory = new DefaultKafkaConsumerFactory<>(consumerConfigProps);
-    return new KafkaMessageListenerContainer<>(consumerFactory, containerProps);
-  }
-
-  /**
-   * Creates a set of properties (key and value) that should be used to configure created Kafka Producers.
-   * <p>
-   * These properties ultimately (via a Spring for Kafka {@link org.springframework.kafka.core.ProducerFactory} get
-   * used to create the Kafka client API's {@link org.apache.kafka.clients.producer.KafkaProducer}. The property keys
-   * are supported {@link ProducerConfig}.
-   *
-   * @return a {@link Map} containing the properties.
-   */
-  private Map<String, Object> producerConfigProps() {
-    Map<String, Object> props = new HashMap<>();
-    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BROKER_DEFAULT_HOST+":"+ KAFKA_BROKER_DEFAULT_PORT);
-    props.put(ProducerConfig.RETRIES_CONFIG, 0);
-    props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
-    props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
-    props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
-    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class);
-    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-    return props;
-  }
-
-  /**
-   * Creates  a set of properties (configuration) to be used when creating the Spring for Kafka
-   * {@link KafkaMessageListenerContainer}.
-   *
-   * @return the created  {@link ContainerProperties}.
-   */
-  private ContainerProperties createMessageListenerContainerProperties() {
-    // Include the name of topics to which the MessageListenerContainer should subscribe
-    return new ContainerProperties(KAFKA_TOPIC_USER_EVENTS, KAFKA_TOPIC_CUSTOMER_EVENTS);
-  }
-
-  /**
-   * Creates a set of properties (key and value) that should be used to configure created Kafka Consumers.
-   * <p>
-   * These properties ultimately (via a Spring for Kafka {@link org.springframework.kafka.core.ConsumerFactory} get
-   * used to create the Kafka client API's {@link org.apache.kafka.clients.consumer.KafkaConsumer}. The property keys
-   * are supported {@link ConsumerConfig}.
-   *
-   * @return a {@link Map} containing the properties.
-   */
-  private Map<String, Object> consumerConfigProperties() {
-    Map<String, Object> props = new HashMap<>();
-    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BROKER_DEFAULT_HOST+":"+ KAFKA_BROKER_DEFAULT_PORT);
-    props.put(ConsumerConfig.GROUP_ID_CONFIG, "springKafkaQuickStartGroup");
-    props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
-    props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "100");
-    props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "15000");
-    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class);
-    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-    return props;
   }
 }
