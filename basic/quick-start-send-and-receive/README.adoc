@@ -40,7 +40,9 @@ as managed beans, as implemented in v0.2.x of this project).
 |Reworks and simplifies version 0.1.x of the sample app by leveraging the use of Spring for Kafka's @EnableKafka
 annotation, in conjunction with Spring bean (Java) config (an @Configuration class) to automate the creation, startup
 and shutdown of the KafkaMessageListenerContainer; and auto-detect message listener handler methods declared using the
-@KafkaListener annotation.
+@KafkaListener annotation. (Uses only core Spring framework support. In practice, where possible, you're better off
+using Spring Boot to simplify e.g. bean config and application config further, as implemented in v0.3.x of this
+project).
 |===
 
 == Project Overview
