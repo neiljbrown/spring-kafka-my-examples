@@ -17,12 +17,12 @@ providing a set of overloaded convenience methods for sending.
 
 *2) POJO Message Listeners* - How to take advantage of Spring for Kafka's https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/listener/KafkaMessageListenerContainer.html[KafkaMessageListenerContainer]
 support for simplifying the code that needs to be written to process messages received on Kafka topics. The
-MessageListenerContainer (MLC) performs the 'heavy lifting' of maintaining a reliable connection to the Kafka broker
-and consuming messages from one or more specified topics (using the Kafka  client API's
-https://kafka.apache.org/24/javadoc/index.html?org/apache/kafka/clients/consumer/KafkaConsumer.html[KafkaConsumer]).
-Application code then only needs to provide a message handler method to which the MLC can dispatch messages, by registering a
-(POJO) implementation of Spring for Kafka's
-https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/listener/MessageListener.html[MessageListener].
+MessageListenerContainer (MLC) performs the 'heavy lifting' of maintaining a reliable connection to the Kafka broker;
+consuming messages from one or more specified topics (using the Kafka client API's
+https://kafka.apache.org/24/javadoc/index.html?org/apache/kafka/clients/consumer/KafkaConsumer.html[KafkaConsumer]),
+dispatching the message to business logic, and acknowledging the message if it is successfully processed. Application
+code need only register or declare POJO implementations of message listener classes containing message handler method(s)
+to which the MLC can dispatch messages.
 
 == Project Versions
 Multiple versions of this project exist. Their git tag and the purpose of each is as follows  -
@@ -31,13 +31,17 @@ Multiple versions of this project exist. Their git tag and the purpose of each i
 [cols="0,1"]
 |===
 |Tag|Purpose
-|0.0.1
-|A fully functional example which illustrates how to manually create all the necessary Spring for Kafka objects for
+|0.1.0
+|A fully functional example which illustrates how to _manually_ create all the necessary Spring for Kafka objects for
 sending & receiving messages, directly using its Java APIs. (Provides greater insight into Spring for Kafka concepts
 and APIs, but in practice you're better off using the framework's support for creating a default set of these objects
-as managed beans,  as shown in v0.0.2 of  this project).
+as managed beans, as implemented in v0.2.0 of this project).
+|0.2.0
+|Reworks and simplifies version 0.1.0 of the sample app by leveraging the use of Spring for Kafka's @EnableKafka
+annotation, in conjunction with Spring bean (Java) config (an @Configuration class) to automate the creation, startup
+and shutdown of the KafkaMessageListenerContainer; and auto-detect message listener handler methods declared using the
+@KafkaListener annotation.
 |===
-
 
 == Project Overview
 The project is written in Java. The source code, and its automated tests can be found in the standard folders
@@ -45,18 +49,23 @@ The project is written in Java. The source code, and its automated tests can be 
 
 The main 'production' classes of interest are -
 
-* `QuickStartMessageListener` - An example of a POJO implementation of the aforementioned Spring for Kafka
-MessageListener interface that provides a 'handler' method for processing individual Kafka messages dispatched to it
-by the Spring for Kafka KafkaMessageListenerContainer with which it has been registered.
+* `QuickStartMessageListener` - An example of a POJO message listener that contains a 'handler' method capable of
+processing individual messages consumed and dispatched by the Spring for Kafka KafkaMessageListenerContainer with which
+it has been previously  registered. The initial (0.1.0) version of the app, which relies on explicit programmatic
+registration of the listener with the MLC, requires this class to implement Spring for Kafka's
+https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/listener/MessageListener.html[MessageListener].
+interface. From version 0.2.0 of the app onwards, the use of the @EnableKafka annotation removes this obligation. The
+framework instead supports the automatic discovery and registration of listener classes containing one or more handler
+methods declared with the @KafkaListener annotation.
 
 Automated tests are written using JUnit (5). They include  -
 
 * `QuickStartMessageListenerIntegrationTest` - A JUnit test class which serves multiple purposes. Notionally it is an
 integration test for the aforementioned `QuickStartMessageListener` class, which exercises the MessageListener in
 conjunction with both the Spring framework and the real implementation of the message broker (Kafka). However, for the
-purposes of this sample, the test case's automated tests (@Test methods) for the MessageListener's +onMessage(...)
-method are also used to provide examples of how to use Spring for Kafka's `KafkaTemplate` class to simplify sending
-of messages to Kafka topics in a reliable manner.
+purposes of this sample, the test case's automated tests (@Test methods) for the Message Listener's handler
+method  (e.g. +onMessage(...)) are also used to provide examples of how to use Spring for Kafka's `KafkaTemplate`
+class to simplify sending of messages to Kafka topics in a reliable manner.
 
 == Generating IDE Projects and Code Docs (Javadoc)
 If you'd like to view the source and/or run the project's tests from your IDE, the project's Gradle build script
