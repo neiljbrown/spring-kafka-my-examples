@@ -31,13 +31,13 @@ Multiple versions of this project exist. Their git tag and the purpose of each i
 [cols="0,1"]
 |===
 |Tag|Purpose
-|0.1.0
+|0.1.x
 |A fully functional example which illustrates how to _manually_ create all the necessary Spring for Kafka objects for
 sending & receiving messages, directly using its Java APIs. (Provides greater insight into Spring for Kafka concepts
 and APIs, but in practice you're better off using the framework's support for creating a default set of these objects
-as managed beans, as implemented in v0.2.0 of this project).
-|0.2.0
-|Reworks and simplifies version 0.1.0 of the sample app by leveraging the use of Spring for Kafka's @EnableKafka
+as managed beans, as implemented in v0.2.x of this project).
+|0.2.x
+|Reworks and simplifies version 0.1.x of the sample app by leveraging the use of Spring for Kafka's @EnableKafka
 annotation, in conjunction with Spring bean (Java) config (an @Configuration class) to automate the creation, startup
 and shutdown of the KafkaMessageListenerContainer; and auto-detect message listener handler methods declared using the
 @KafkaListener annotation.
@@ -51,7 +51,7 @@ The main 'production' classes of interest are -
 
 * `QuickStartMessageListener` - An example of a POJO message listener that contains a 'handler' method capable of
 processing individual messages consumed and dispatched by the Spring for Kafka KafkaMessageListenerContainer with which
-it has been previously  registered. The initial (0.1.0) version of the app, which relies on explicit programmatic
+it has been previously  registered. The initial (0.1.x) version of the app, which relies on explicit programmatic
 registration of the listener with the MLC, requires this class to implement Spring for Kafka's
 https://docs.spring.io/spring-kafka/docs/2.4.0.RELEASE/api/org/springframework/kafka/listener/MessageListener.html[MessageListener].
 interface. From version 0.2.0 of the app onwards, the use of the @EnableKafka annotation removes this obligation. The
@@ -118,8 +118,8 @@ packaging the app for deploying and running standalone. The minimum required ver
 automatically installed when you execute the build using the supplied Gradle wrapper script (./gradlew), so this is
 _not_ a pre-requisite.
 
-*Kafka* - The automated integration tests currently rely on connecting to a local instance of Kafka, listening on its
-default port. You will  therefore need to install and start Kafka on your local machine before you can run the tests,
+*Kafka* - The automated integration tests currently rely on connecting to a running instance of Kafka. You'll therefore
+need to install and start an instance of Kafka before you can run the tests,
 
 === Steps
 
@@ -135,6 +135,12 @@ $ kafka-server-start /usr/local/etc/kafka/server.properties &
 root folder:
 
 `./gradlew test`
+
+By default the tests assume that the Kafka is running on localhost (same node as the test) and listening on its default
+port. If you need to use a different hostname or port you can optionally override one or both of them by setting
+Java system properties when running the tests as shown in the following example command:
+
+`./gradlew test -Dkafka.broker.host=myhost -Dkafka.broker.port=9093`
 
 If the test runs successfully you will see messages similar to the following logged to the console (stdout) -
 ```

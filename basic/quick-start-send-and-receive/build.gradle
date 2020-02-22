@@ -80,6 +80,13 @@ idea {
 test {
   useJUnitPlatform() // Enable support for JUnit 5+
 
+  // Propagate any Java system properties specified on launching Gradle that are used by the tests. This is necessary
+  // as the tests are run in a different JVM/java process to Gradle
+  systemProperties = (Map) System.properties.subMap(
+    "kafka.broker.host",
+    "kafka.broker.port"
+  )
+
   testLogging {
     showStandardStreams = true // Log any output that the tests write to stdout or stderr
     events "passed", "skipped", "failed" // Log the execution of each test and its result

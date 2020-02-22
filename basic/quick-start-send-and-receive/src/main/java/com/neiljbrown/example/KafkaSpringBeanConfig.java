@@ -17,6 +17,7 @@ package com.neiljbrown.example;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -24,6 +25,7 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -49,8 +51,30 @@ import org.springframework.kafka.listener.MessageListenerContainer;
 @EnableKafka
 public class KafkaSpringBeanConfig {
 
-  private static final String KAFKA_BROKER_DEFAULT_HOST = "localhost";
-  private static final String KAFKA_BROKER_DEFAULT_PORT = "9092";
+  private String kafkaBrokerHost;
+  private int kafkaBrokerPort;
+
+  /**
+   * Creates an instance of this Spring bean config class using the supplied values.
+   *
+   * @param kafkaBrokerHost the Kafka broker hostname that Kafka producers and consumers created by Spring managed
+   * beans should be configured to use. When an instance of this @Component is created by Spring on loading the
+   * ApplicationContext the parameter's @Value annotation supports optionally supplying an environment specific
+   * hostname via a Java system property named 'kafka.broker.host'; else a default value is used.
+   * @param kafkaBrokerPort the Kafka broker port that Kafka producers and consumers created by Spring managed
+   * beans should be configured to use. When an instance of this @Component is created by Spring on loading the
+   * ApplicationContext the parameter's @Value annotation supports optionally supplying an environment specific
+   * port via a Java system property named 'kafka.broker.port'; else a default value is used.
+   */
+  public KafkaSpringBeanConfig(@Value("#{systemProperties['kafka.broker.host'] ?: 'localhost}'}") String kafkaBrokerHost,
+    @Value("#{systemProperties['kafka.broker.port'] ?: '9092'}") int kafkaBrokerPort) {
+    Objects.requireNonNull(kafkaBrokerHost, "kafkaBrokerHost must not be null");
+    if (kafkaBrokerPort < 1) {
+      throw new IllegalArgumentException("kafkaBrokerPort must be greater than zero");
+    }
+    this.kafkaBrokerHost = kafkaBrokerHost;
+    this.kafkaBrokerPort = kafkaBrokerPort;
+  }
 
   /**
    * Creates the instance of a Spring for Kafka {@link KafkaTemplate} that this app uses to simplify publishing/sending
@@ -119,7 +143,7 @@ public class KafkaSpringBeanConfig {
    */
   private Map<String, Object> createProducerConfigProps() {
     Map<String, Object> props = new HashMap<>();
-    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BROKER_DEFAULT_HOST+":"+ KAFKA_BROKER_DEFAULT_PORT);
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.buildKafkaBrokerHostAndPort());
     props.put(ProducerConfig.RETRIES_CONFIG, 0);
     props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
     props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
@@ -141,7 +165,7 @@ public class KafkaSpringBeanConfig {
    */
   private Map<String, Object> createConsumerConfigProperties() {
     Map<String, Object> props = new HashMap<>();
-    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BROKER_DEFAULT_HOST+":"+ KAFKA_BROKER_DEFAULT_PORT);
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.buildKafkaBrokerHostAndPort());
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "springKafkaQuickStartGroup");
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
     props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "100");
@@ -149,5 +173,9 @@ public class KafkaSpringBeanConfig {
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class);
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     return props;
+  }
+
+  private String buildKafkaBrokerHostAndPort()  {
+    return this.kafkaBrokerHost + ":" + this.kafkaBrokerPort;
   }
 }
