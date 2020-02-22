@@ -25,9 +25,11 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
@@ -53,10 +55,12 @@ public class KafkaSpringBeanConfig {
 
   private String kafkaBrokerHost;
   private int kafkaBrokerPort;
+  private Environment environment;
 
   /**
    * Creates an instance of this Spring bean config class using the supplied values.
    *
+   * @param environment the instance of {@link Environment} to use to source Kafka related (e.g. env specific) config.
    * @param kafkaBrokerHost the Kafka broker hostname that Kafka producers and consumers created by Spring managed
    * beans should be configured to use. When an instance of this @Component is created by Spring on loading the
    * ApplicationContext the parameter's @Value annotation supports optionally supplying an environment specific
@@ -66,12 +70,16 @@ public class KafkaSpringBeanConfig {
    * ApplicationContext the parameter's @Value annotation supports optionally supplying an environment specific
    * port via a Java system property named 'kafka.broker.port'; else a default value is used.
    */
-  public KafkaSpringBeanConfig(@Value("#{systemProperties['kafka.broker.host'] ?: 'localhost}'}") String kafkaBrokerHost,
-    @Value("#{systemProperties['kafka.broker.port'] ?: '9092'}") int kafkaBrokerPort) {
+  @Autowired
+  public KafkaSpringBeanConfig(Environment environment,
+    @Value("#{systemProperties['kafka.broker.host'] ?: '${kafka.broker.host}'}") String kafkaBrokerHost,
+    @Value("#{systemProperties['kafka.broker.port'] ?: '${kafka.broker.port}'}") int kafkaBrokerPort) {
+    Objects.requireNonNull(environment, "environment must not be null");
     Objects.requireNonNull(kafkaBrokerHost, "kafkaBrokerHost must not be null");
     if (kafkaBrokerPort < 1) {
       throw new IllegalArgumentException("kafkaBrokerPort must be greater than zero");
     }
+    this.environment = environment;
     this.kafkaBrokerHost = kafkaBrokerHost;
     this.kafkaBrokerPort = kafkaBrokerPort;
   }
@@ -144,10 +152,10 @@ public class KafkaSpringBeanConfig {
   private Map<String, Object> createProducerConfigProps() {
     Map<String, Object> props = new HashMap<>();
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.buildKafkaBrokerHostAndPort());
-    props.put(ProducerConfig.RETRIES_CONFIG, 0);
-    props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
-    props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
-    props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+    props.put(ProducerConfig.RETRIES_CONFIG, this.environment.getProperty("kafka.producer.retries_config"));
+    props.put(ProducerConfig.BATCH_SIZE_CONFIG, this.environment.getProperty("kafka.producer.batch_size_config"));
+    props.put(ProducerConfig.LINGER_MS_CONFIG, this.environment.getProperty("kafka.producer.linger_ms_config"));
+    props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, this.environment.getProperty("kafka.producer.buffer_memory_config"));
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class);
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
     return props;
@@ -166,10 +174,10 @@ public class KafkaSpringBeanConfig {
   private Map<String, Object> createConsumerConfigProperties() {
     Map<String, Object> props = new HashMap<>();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.buildKafkaBrokerHostAndPort());
-    props.put(ConsumerConfig.GROUP_ID_CONFIG, "springKafkaQuickStartGroup");
-    props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
-    props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "100");
-    props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "15000");
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, this.environment.getProperty("kafka.consumer.group_id_config"));
+    props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, this.environment.getProperty("kafka.consumer.enable_auto_commit_config"));
+    props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, this.environment.getProperty("kafka.consumer.auto_commit_interval_ms_config"));
+    props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, this.environment.getProperty("kafka.consumer.session_timeout_ms_config"));
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class);
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     return props;

@@ -28,7 +28,8 @@ import org.apache.kafka.common.header.Header;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.*;
+import org.springframework.context.annotation.Profile;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.support.GenericMessage;
@@ -69,7 +70,9 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
  */
 // Instruct JUnit 5 to extend the test with Spring support as provided by the Spring TestContext framework; And
 // instruct the TestContext framework to load a Spring AppContext from the specified bean config class
-@SpringJUnitConfig(KafkaSpringBeanConfig.class)
+@SpringJUnitConfig(AppSpringBeanConfig.class)
+// Load any Spring beans declared specifically for integration tests and exclude those declared in other profiles
+@Profile("integration-test")
 public class QuickStartMessageListenerIntegrationTest {
 
   private static final String MSG_HDR_MY_EVENT_ID = "my-event-id";
