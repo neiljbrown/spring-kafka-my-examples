@@ -51,7 +51,7 @@ The project is written in Java. The source code, and its automated tests can be 
 
 The main 'production' classes of interest are -
 
-* `QuickStartMessageListener` - An example of a POJO message listener that contains a 'handler' method capable of
+* `UserDomainEventsMessageListener` - An example of a POJO message listener that contains a 'handler' method capable of
 processing individual messages consumed and dispatched by the Spring for Kafka KafkaMessageListenerContainer with which
 it has been previously  registered. The initial (0.1.x) version of the app, which relies on explicit programmatic
 registration of the listener with the MLC, requires this class to implement Spring for Kafka's
@@ -62,12 +62,12 @@ methods declared with the @KafkaListener annotation.
 
 Automated tests are written using JUnit (5). They include  -
 
-* `QuickStartMessageListenerIntegrationTest` - A JUnit test class which serves multiple purposes. Notionally it is an
-integration test for the aforementioned `QuickStartMessageListener` class, which exercises the MessageListener in
-conjunction with both the Spring framework and the real implementation of the message broker (Kafka). However, for the
-purposes of this sample, the test case's automated tests (@Test methods) for the Message Listener's handler
-method  (e.g. +onMessage(...)) are also used to provide examples of how to use Spring for Kafka's `KafkaTemplate`
-class to simplify sending of messages to Kafka topics in a reliable manner.
+* `UserDomainEventsMessageListenerIntegrationTest` - A JUnit test class which serves multiple purposes. Notionally it
+is an integration test for the aforementioned `UserDomainEventsMessageListener` class, which exercises the
+MessageListener in conjunction with both the Spring framework and the real implementation of the message broker
+(Kafka). However, for the purposes of this sample, the test case's automated tests (@Test methods) for the Message
+Listener's handler method  (e.g. +onMessage(...)) are also used to provide examples of how to use Spring for Kafka's
+`KafkaTemplate` class to simplify sending of messages to Kafka topics in a reliable manner.
 
 == Generating IDE Projects and Code Docs (Javadoc)
 If you'd like to view the source and/or run the project's tests from your IDE, the project's Gradle build script
@@ -146,7 +146,7 @@ Java system properties when running the tests as shown in the following example 
 
 If the test runs successfully you will see messages similar to the following logged to the console (stdout) -
 ```
-com.neiljbrown.example.QuickStartMessageListenerIntegrationTest > tesOnMessage() STANDARD_OUT
+com.neiljbrown.example.UserDomainEventsMessageListenerIntegrationTest > tesOnMessage() STANDARD_OUT
     ...
     2020-01-18 19:00:59,045 [Test worker ] INFO  o.a.k.clients.consumer.KafkaConsumer - [Consumer clientId=consumer-springKafkaQuickStartGroup-1, groupId=springKafkaQuickStartGroup] Subscribed to topic(s): user-events, customer-events
     ...
@@ -154,15 +154,15 @@ com.neiljbrown.example.QuickStartMessageListenerIntegrationTest > tesOnMessage()
     2020-01-18 19:01:00,569 [Test worker ] INFO  o.a.k.c.producer.ProducerConfig - ProducerConfig values:
     ...
     ...
-    2020-01-18 19:01:00,666 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 16, CreateTime = 1579374060613, serialized key size = 4, serialized value size = 33, headers = RecordHeaders(headers = [], isReadOnly = false), key = 1, value = {"userId": 1, "firstName": "joe"})].
-    2020-01-18 19:01:00,667 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 17, CreateTime = 1579374060618, serialized key size = 4, serialized value size = 34, headers = RecordHeaders(headers = [], isReadOnly = false), key = 2, value = {"userId": 2, "firstName": "jane"})].
-    2020-01-18 19:01:00,667 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 18, CreateTime = 1579374060619, serialized key size = 4, serialized value size = 34, headers = RecordHeaders(headers = [RecordHeader(key = my-event-id, value = [49, 50, 51]), RecordHeader(key = my-event-type, value = [85, 115, 101, 114, 67, 114, 101, 97, 116, 101, 100])], isReadOnly = false), key = 3, value = {"userId": 3, "firstName": "jack"})].
-    2020-01-18 19:01:00,669 [-C-1 ] DEBUG c.n.e.QuickStartMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 19, CreateTime = 1579374060623, serialized key size = 4, serialized value size = 33, headers = RecordHeaders(headers = [RecordHeader(key = my-event-type, value = [85, 115, 101, 114, 67, 114, 101, 97, 116, 101, 100]), RecordHeader(key = my-event-id, value = [49, 50, 52])], isReadOnly = false), key = 4, value = {"userId": 4, "firstName": "jim"})].
+    2020-01-18 19:01:00,666 [-C-1 ] DEBUG c.n.e.UserDomainEventsMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 16, CreateTime = 1579374060613, serialized key size = 4, serialized value size = 33, headers = RecordHeaders(headers = [], isReadOnly = false), key = 1, value = {"userId": 1, "firstName": "joe"})].
+    2020-01-18 19:01:00,667 [-C-1 ] DEBUG c.n.e.UserDomainEventsMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 17, CreateTime = 1579374060618, serialized key size = 4, serialized value size = 34, headers = RecordHeaders(headers = [], isReadOnly = false), key = 2, value = {"userId": 2, "firstName": "jane"})].
+    2020-01-18 19:01:00,667 [-C-1 ] DEBUG c.n.e.UserDomainEventsMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 18, CreateTime = 1579374060619, serialized key size = 4, serialized value size = 34, headers = RecordHeaders(headers = [RecordHeader(key = my-event-id, value = [49, 50, 51]), RecordHeader(key = my-event-type, value = [85, 115, 101, 114, 67, 114, 101, 97, 116, 101, 100])], isReadOnly = false), key = 3, value = {"userId": 3, "firstName": "jack"})].
+    2020-01-18 19:01:00,669 [-C-1 ] DEBUG c.n.e.UserDomainEventsMessageListener - Received message [ConsumerRecord(topic = user-events, partition = 0, leaderEpoch = 0, offset = 19, CreateTime = 1579374060623, serialized key size = 4, serialized value size = 33, headers = RecordHeaders(headers = [RecordHeader(key = my-event-type, value = [85, 115, 101, 114, 67, 114, 101, 97, 116, 101, 100]), RecordHeader(key = my-event-id, value = [49, 50, 52])], isReadOnly = false), key = 4, value = {"userId": 4, "firstName": "jim"})].
     ...
     ...
     2020-01-18 19:01:00,740 [-C-1 ] INFO  o.s.k.l.KafkaMessageListenerContainer$ListenerConsumer - springKafkaQuickStartGroup: Consumer stopped
 
-com.neiljbrown.example.QuickStartMessageListenerIntegrationTest > tesOnMessage() PASSED
+com.neiljbrown.example.UserDomainEventsMessageListenerIntegrationTest > tesOnMessage() PASSED
 
 ```
 

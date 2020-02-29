@@ -102,11 +102,11 @@ public class KafkaSpringBeanConfig {
    * annotation to support their registration with the Spring for Kafka KafkaMessageListenerContainer, which handles
    * consuming messages from the Kafka topic and dispatching them to the relevant handler method(s).
    *
-   * @return the created {@link QuickStartMessageListener}.
+   * @return the created {@link UserDomainEventsMessageListener}.
    */
   @Bean
-  QuickStartMessageListener quickStartMessageListener() {
-    return new QuickStartMessageListener(null);
+  UserDomainEventsMessageListener userDomainEventsMessageListener() {
+    return new UserDomainEventsMessageListener(null);
   }
 
   /**

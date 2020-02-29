@@ -36,16 +36,16 @@ import org.springframework.kafka.annotation.KafkaListener;
  * After having applied the {@link org.springframework.kafka.annotation.EnableKafka} annotation in the application's
  * Spring bean config, this class no longer needs to implement the Spring for Kafka
  * {@link org.springframework.kafka.listener.MessageListener} interface nor register itself with the MLC. Instead,
- * this listener's available message handler methods can be made discoverable by declaring them using the
+ * this listener's available message handler methods are made discoverable by declaring them using the
  * {@link KafkaListener} annotation. This annotation is also used to specify the topic(s) from which handler method
  * listens and consumes messages.
  */
-public class QuickStartMessageListener {
+public class UserDomainEventsMessageListener {
 
   /** The name of the Kafka topic from which User domain events are consumed. */
   static final String KAFKA_TOPIC_USER_EVENTS = "user-events";
 
-  private static final Logger logger = LoggerFactory.getLogger(QuickStartMessageListener.class);
+  private static final Logger logger = LoggerFactory.getLogger(UserDomainEventsMessageListener.class);
 
   private Consumer<ConsumerRecord<Integer, String>> messageProcessor;
   private CountDownLatch latch = new CountDownLatch(0);
@@ -56,7 +56,7 @@ public class QuickStartMessageListener {
    * (Processing would typically be done by {@link #onMessage(ConsumerRecord)} itself). MessageListener can't return
    * values, so this argument supports test code verifying each received message.
    */
-  public QuickStartMessageListener(Consumer<ConsumerRecord<Integer, String>> messageProcessor) {
+  public UserDomainEventsMessageListener(Consumer<ConsumerRecord<Integer, String>> messageProcessor) {
     if(messageProcessor != null) {
       this.messageProcessor = messageProcessor;
     }

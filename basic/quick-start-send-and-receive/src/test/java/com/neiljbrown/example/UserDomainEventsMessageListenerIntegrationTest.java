@@ -37,7 +37,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /*
  * Driver program for this sample app implemented in the form of Spring container integration test for the {@link
- * QuickStartMessageListener}. Provides an example of how to use the following features of the Spring for Kafka
+ * UserDomainEventsMessageListener}. Provides an example of how to use the following features of the Spring for Kafka
  * library/module.
  * <p>
  * <br>
@@ -58,7 +58,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
  * <p>
  * <br>
  * <h2>Implementation Overview &amp; Runtime Dependencies</h2>
- * This driver program is notionally implemented as a JUnit test case for {@link QuickStartMessageListener} - a
+ * This driver program is notionally implemented as a JUnit test case for {@link UserDomainEventsMessageListener} - a
  * sample implementation of Spring or Kafka's {@link org.springframework.kafka.listener.MessageListener}.
  * <p>
  * The test method(s) currently relies on connecting to a previously launched, locally running instance of the Kafka
@@ -73,25 +73,25 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @SpringJUnitConfig(AppSpringBeanConfig.class)
 // Load any Spring beans declared specifically for integration tests and exclude those declared in other profiles
 @Profile("integration-test")
-public class QuickStartMessageListenerIntegrationTest {
+public class UserDomainEventsMessageListenerIntegrationTest {
 
   private static final String MSG_HDR_MY_EVENT_ID = "my-event-id";
   private static final String MSG_HDR_MY_EVENT_TYPE = "my-event-type";
 
-  private QuickStartMessageListener messageListener;
+  private UserDomainEventsMessageListener messageListener;
   private KafkaTemplate<Integer, String> kafkaTemplate;
   private List<ConsumerRecord<Integer, String>> handledMessages = new ArrayList<>();
 
   /**
    * Creates an instance of this test from its supplied dependencies.
    *
-   * @param messageListener the instance of the {@link QuickStartMessageListener} under test. This should be a Spring
+   * @param messageListener the instance of the {@link UserDomainEventsMessageListener} under test. This should be a Spring
    * managed bean whose @KafkaListener annotated message handler methods have detected by and registered with Spring
    * for Kafka's MessageListenerContainer.
    * @param kafkaTemplate a {@link KafkaTemplate} capable of sending messages with an Integer key and a String value.
    */
   @Autowired
-  public QuickStartMessageListenerIntegrationTest(QuickStartMessageListener messageListener,
+  public UserDomainEventsMessageListenerIntegrationTest(UserDomainEventsMessageListener messageListener,
     KafkaTemplate<Integer, String> kafkaTemplate) {
     this.kafkaTemplate = kafkaTemplate;
     this.messageListener = messageListener;
@@ -104,7 +104,7 @@ public class QuickStartMessageListenerIntegrationTest {
   }
 
   /**
-   * Integration test for {@link QuickStartMessageListener#onMessage(ConsumerRecord)}, which primarily serves to
+   * Integration test for {@link UserDomainEventsMessageListener#onMessage(ConsumerRecord)}, which primarily serves to
    * illustrate how Spring for Kafka can be used on top of the Kafka client APIs to simplify sending and receiving
    * messages via Kafka, by both using a POJO based message listener, facilitated by Spring for Kafka's
    * {@link KafkaMessageListenerContainer}, to simplify consuming messages received on Kafka topics; and Spring for
@@ -121,16 +121,16 @@ public class QuickStartMessageListenerIntegrationTest {
     // *** Example Usage of KafkaTemplate to send messages
 
     // KafkaTemplate can be configured to send messages to a default topic
-    this.kafkaTemplate.setDefaultTopic(QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS);
+    this.kafkaTemplate.setDefaultTopic(UserDomainEventsMessageListener.KAFKA_TOPIC_USER_EVENTS);
 
     // Send a message to the default topic, without a partition, comprising the specified key and value.
     this.kafkaTemplate.sendDefault(1,"{\"userId\": 1, \"firstName\": \"joe\"}");
 
     // Send a message to a specific topic AND partition, comprising the specified key and value.
-    this.kafkaTemplate.send(QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS, 0, 2, "{\"userId\": 2, \"firstName\": \"jane\"}");
+    this.kafkaTemplate.send(UserDomainEventsMessageListener.KAFKA_TOPIC_USER_EVENTS, 0, 2, "{\"userId\": 2, \"firstName\": \"jane\"}");
 
     // Send a message with domain-specific headers using Kafka client API's ProducerRecord class
-    ProducerRecord<Integer, String> producerRecord = new ProducerRecord<>(QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS, null, 3,
+    ProducerRecord<Integer, String> producerRecord = new ProducerRecord<>(UserDomainEventsMessageListener.KAFKA_TOPIC_USER_EVENTS, null, 3,
       "{\"userId\": 3, \"firstName\": \"jack\"}");
     producerRecord.headers().add(MSG_HDR_MY_EVENT_ID, "123".getBytes());
     producerRecord.headers().add(MSG_HDR_MY_EVENT_TYPE, "UserCreated".getBytes());
@@ -142,7 +142,7 @@ public class QuickStartMessageListenerIntegrationTest {
     final String userCreatedEventJson = "{\"userId\": 4, \"firstName\": \"jim\"}";
     final String myEventId = "124";
     final GenericMessage<String> eventMessage = new GenericMessage<>(userCreatedEventJson, Map.of(
-      KafkaHeaders.TOPIC, QuickStartMessageListener.KAFKA_TOPIC_USER_EVENTS, // KafkaTemplate's default topic used if not provided. One or other required.
+      KafkaHeaders.TOPIC, UserDomainEventsMessageListener.KAFKA_TOPIC_USER_EVENTS, // KafkaTemplate's default topic used if not provided. One or other required.
       KafkaHeaders.PARTITION_ID, 0, // Optional
       KafkaHeaders.MESSAGE_KEY, 4, // Optional
       // Note - Additional domain-specific headers are only included in the Kafka message if value of type byte[]
